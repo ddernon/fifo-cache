@@ -1,0 +1,19 @@
+[package]
+name = "fifo-cache"
+version = "0.1.0"
+# Probbly works with lower version, but this one is the Win 7 support cutoff point
+# so let's keep this one in mind
+rust-version = "1.77"
+edition = "2021"
+
+authors = ["David Dernoncourt"]
+description = "A simple FIFO cache with TTL (Time To Live) support"
+license = "AGPL-3.0-or-later"
+repository = "https://tbd.com/tbs/fifo-cache"
+keywords = ["cache", "fifo", "ttl", "memory"]
+categories = ["caching", "data-structures"]
+
+[dependencies]
+
+[profile.test]
+strip = true
