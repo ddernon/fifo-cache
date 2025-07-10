@@ -18,6 +18,7 @@
 //! }
 //! ```
 
+use std::borrow::Borrow;
 use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
 
@@ -79,7 +80,23 @@ where
   /// # Returns
   ///
   /// `Some(&V)` if the key exists and hasn't expired, `None` otherwise.
-  pub fn get(&self, key: &K) -> Option<&V> {
+  ///
+  /// # Example
+  ///
+  /// ```
+  /// use fifo_cache::FifoCache;
+  /// use std::time::Duration;
+  ///
+  /// let mut cache = FifoCache::new(100, Duration::from_secs(60));
+  /// cache.insert("my_key", "my_value");
+  /// let value = cache.get(&"my_key");
+  /// assert_eq!(value, Some(&"my_value"));
+  /// ```
+  pub fn get<Q>(&self, key: &Q) -> Option<&V> 
+  where 
+    K: Borrow<Q>,
+    Q: ?Sized + std::hash::Hash + Eq,
+  {
     let now = Instant::now();
     self.map.get(key)
       .filter(|entry| entry.expires_at > now)
@@ -109,6 +126,28 @@ where
     }
   }
 
+  /// Inserts a key-value pair into the cache using types that can be converted into the key and value types.
+  ///
+  /// This is a convenience wrapper around [`insert`](Self::insert) that accepts any types implementing
+  /// `Into<K>` and `Into<V>`. Note that using only `insert_lazy` prevents type inference, so you'll 
+  /// need to explicitly specify the cache types:
+  ///
+  /// ```
+  /// use fifo_cache::FifoCache;
+  /// use std::time::Duration;
+  /// 
+  /// // With insert - types are inferred
+  /// let mut cache = FifoCache::new(100, Duration::from_secs(60));
+  /// cache.insert("key", "value");  // FifoCache<&str, &str>
+  ///
+  /// // With insert_lazy - types must be specified  
+  /// let mut cache: FifoCache<String, String> = FifoCache::new(100, Duration::from_secs(60));
+  /// cache.insert_lazy("key", "value");  // &str -> String conversion
+  /// ```
+  pub fn insert_lazy<Kinto: Into<K>, Vinto: Into<V>>(&mut self, key: Kinto, value: Vinto) {
+    self.insert(key.into(), value.into())
+  }
+
   /// Removes a key from the cache.
   ///
   /// # Arguments
@@ -118,9 +157,13 @@ where
   /// # Returns
   ///
   /// `Some(V)` if the key existed, `None` otherwise.
-  pub fn remove(&mut self, key: &K) -> Option<V> {
+  pub fn remove<Q>(&mut self, key: &Q) -> Option<V> 
+  where
+    K: Borrow<Q>,
+    Q: ?Sized + std::hash::Hash + Eq,
+  {
     if let Some(entry) = self.map.remove(key) {
-      self.order.retain(|k| k != key);
+      self.order.retain(|k| k.borrow() != key);
       Some(entry.value)
     } else {
       None

@@ -46,6 +46,7 @@ cargo test
 In `Cargo.lock`, replace `version = 4` with `version = 3`. Then:
 
 ```bash
+rustup install 1.77
 cargo +1.77 test
 ```
 

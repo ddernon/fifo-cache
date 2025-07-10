@@ -1,6 +1,6 @@
 [package]
 name = "fifo-cache"
-version = "0.1.0"
+version = "0.1.1"
 # Probbly works with lower version, but this one is the Win 7 support cutoff point
 # so let's keep this one in mind
 rust-version = "1.77"
