@@ -64,8 +64,8 @@ where
   /// ```
   pub fn new(max_size: usize, default_ttl: Duration) -> Self {
     Self {
-      map: HashMap::new(),
-      order: VecDeque::new(),
+      map: HashMap::with_capacity(max_size),
+      order: VecDeque::with_capacity(max_size),
       max_size,
       default_ttl,
     }
