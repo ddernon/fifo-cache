@@ -1,0 +1,30 @@
+stages:
+  - lint
+  - test
+
+clippy:
+  stage: lint
+  image: rust:latest
+  script:
+    - rustup component add clippy
+    - cargo clippy -- -D warnings  # Fail on warnings
+
+rust-stable:
+  stage: test
+  image: rust:latest
+  script:
+    - cargo test
+
+rust-1_59:
+  stage: test
+  image: rust:1.59
+  script:
+    - rm Cargo.lock
+    - cargo test
+
+rust-nightly:
+  stage: test
+  image: rustlang/rust:nightly
+  allow_failure: true  # Allowed to fail
+  script:
+    - cargo test
