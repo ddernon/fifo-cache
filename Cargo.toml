@@ -6,7 +6,7 @@ rust-version = "1.59"
 
 authors = ["David Dernoncourt <daviddernoncourt.com>"]
 license = "MIT"
-description = "A simple FIFO cache with TTL (Time To Live) support"
+description = "A minimalist FIFO cache with TTL (Time To Live) support"
 categories = ["caching"]
 keywords = ["cache", "fifo", "ttl"]
 readme = "readme.md"

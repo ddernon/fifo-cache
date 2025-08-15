@@ -1,10 +1,6 @@
 //! A minimalist FIFO (First In, First Out) cache with TTL (Time To Live) support.
 //!
-//! This crate provides a memory-efficient cache that evicts the oldest entries
-//! when it reaches capacity, and automatically expires entries after a specified
-//! time duration.
-//!
-//! # Examples
+//! # Example
 //!
 //! ```
 //! use fifo_cache::FifoCache;
@@ -14,7 +10,7 @@
 //! cache.insert("key1", "value1");
 //! 
 //! if let Some(value) = cache.get(&"key1") {
-//!     println!("Found: {}", value);
+//!   println!("Found: {}", value);
 //! }
 //! ```
 
@@ -33,6 +29,10 @@ struct CacheEntry<V> {
 ///
 /// This cache maintains insertion order and evicts the oldest entries when
 /// the maximum size is reached. Entries also expire after the specified TTL.
+/// 
+/// Note that:
+/// - reinserting an existing entry will not move it back to the front
+/// - the maximum capacity may *very briefly* be exceeded by 1
 #[derive(Debug)]
 pub struct FifoCache<K, V> {
   map: HashMap<K, CacheEntry<V>>,
@@ -52,16 +52,6 @@ where
   ///
   /// * `max_size` - Maximum number of entries the cache can hold
   /// * `default_ttl` - Default time-to-live for cache entries
-  ///
-  /// # Examples
-  ///
-  /// ```
-  /// use fifo_cache::FifoCache;
-  /// use std::time::Duration;
-  ///
-  /// let cache: FifoCache<String, i32> = 
-  ///     FifoCache::new(1000, Duration::from_secs(300));
-  /// ```
   pub fn new(max_size: usize, default_ttl: Duration) -> Self {
     Self {
       map: HashMap::with_capacity(max_size + 1),
@@ -184,9 +174,6 @@ where
   }
 
   /// Removes all expired entries from the cache.
-  ///
-  /// This is performed automatically during normal operations, but can be
-  /// called manually to free memory immediately.
   pub fn cleanup_expired(&mut self) {
     let now = Instant::now();
     self.order.retain(|key| {

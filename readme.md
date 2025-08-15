@@ -22,7 +22,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-fifo-cache = "0.1.0"
+fifo-cache = "0.1"
 ```
 
 ## Example
