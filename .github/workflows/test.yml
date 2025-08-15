@@ -24,7 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.59
-      - run: rm Cargo.lock
       - run: cargo test
 
   test-beta:

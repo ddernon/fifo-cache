@@ -19,7 +19,7 @@
 //! ```
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{hash_map, HashMap, VecDeque};
 use std::time::{Duration, Instant};
 
 /// A cache entry that stores a value along with its expiration time.
@@ -64,8 +64,8 @@ where
   /// ```
   pub fn new(max_size: usize, default_ttl: Duration) -> Self {
     Self {
-      map: HashMap::with_capacity(max_size),
-      order: VecDeque::with_capacity(max_size),
+      map: HashMap::with_capacity(max_size + 1),
+      order: VecDeque::with_capacity(max_size + 1),
       max_size,
       default_ttl,
     }
@@ -115,14 +115,17 @@ where
   pub fn insert(&mut self, key: K, value: V) {
     let expires_at = Instant::now() + self.default_ttl;
     
-    if self.map.contains_key(&key) {
-      // Entry exists, just update it
-      self.map.insert(key, CacheEntry { value, expires_at });
-    } else {
-      // Entry doesn't exist, make room and insert it
-      self.prune_plus_one();
-      self.order.push_back(key.clone());
-      self.map.insert(key, CacheEntry { value, expires_at });
+    match self.map.entry(key.clone()) {
+      hash_map::Entry::Occupied(mut entry) => {
+        // Entry exists, just update it
+        entry.insert(CacheEntry { value, expires_at });
+      }
+      hash_map::Entry::Vacant(entry) => {
+        // Entry doesn't exist, insert it then prune
+        entry.insert(CacheEntry { value, expires_at });
+        self.order.push_back(key);
+        self.prune();
+      }
     }
   }
 
@@ -221,7 +224,7 @@ where
   pub fn set_max_size(&mut self, max_size: usize, prune: bool) {
     self.max_size = max_size;
     if prune {
-      self.prune_exact();
+      self.prune();
     }
   }
 
@@ -242,17 +245,8 @@ where
   }
 
   // Evicts oldest entries if at capacity
-  fn prune_exact(&mut self) {
+  fn prune(&mut self) {
     while self.order.len() > self.max_size {
-      if let Some(old_key) = self.order.pop_front() {
-        self.map.remove(&old_key);
-      }
-    }
-  }
-
-  // Evicts oldest entries if at capacity, and makes room for a new one
-  fn prune_plus_one(&mut self) {
-    while self.order.len() >= self.max_size {
       if let Some(old_key) = self.order.pop_front() {
         self.map.remove(&old_key);
       }

@@ -19,7 +19,6 @@ rust-1_59:
   stage: test
   image: rust:1.59
   script:
-    - rm Cargo.lock
     - cargo test
 
 rust-beta:
