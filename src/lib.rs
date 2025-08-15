@@ -1,4 +1,4 @@
-//! A simple FIFO (First In, First Out) cache with TTL (Time To Live) support.
+//! A minimalist FIFO (First In, First Out) cache with TTL (Time To Live) support.
 //!
 //! This crate provides a memory-efficient cache that evicts the oldest entries
 //! when it reaches capacity, and automatically expires entries after a specified

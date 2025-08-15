@@ -22,6 +22,12 @@ rust-1_59:
     - rm Cargo.lock
     - cargo test
 
+rust-beta:
+  stage: test
+  image: instrumentisto/rust:beta
+  script:
+    - cargo test
+
 rust-nightly:
   stage: test
   image: rustlang/rust:nightly

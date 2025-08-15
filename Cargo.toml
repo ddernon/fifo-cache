@@ -1,17 +1,18 @@
 [package]
 name = "fifo-cache"
 version = "0.1.1"
-rust-version = "1.59"
 edition = "2021"
+rust-version = "1.59"
 
-authors = ["David Dernoncourt"]
+authors = ["David Dernoncourt <daviddernoncourt.com>"]
+license = "MIT"
 description = "A simple FIFO cache with TTL (Time To Live) support"
-license = "AGPL-3.0-or-later"
-repository = "https://tbd.com/tbs/fifo-cache"
-keywords = ["cache", "fifo", "ttl", "memory"]
-categories = ["caching", "data-structures"]
-
-[dependencies]
-
-[profile.test]
-strip = true
+categories = ["caching"]
+keywords = ["cache", "fifo", "ttl"]
+readme = "readme.md"
+repository = "https://framagit.org/dder/fifo-cache"
+exclude = [
+  "/.github/",
+  "/.vscode/",
+  "/.gitlab-ci.yml"
+]
