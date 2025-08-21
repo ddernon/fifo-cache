@@ -1,11 +1,17 @@
 
 use fifo_cache::FifoCache;
+#[cfg(feature = "ttl")]
 use std::thread;
+#[cfg(feature = "ttl")]
 use std::time::Duration;
 
 #[test]
 fn test_basic_operations() {
-  let mut cache = FifoCache::new(3, Duration::from_secs(60));
+  let mut cache = FifoCache::new(
+    3,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert("a", 1);
   cache.insert("b", 2);
@@ -19,7 +25,11 @@ fn test_basic_operations() {
 
 #[test]
 fn test_fifo_eviction() {
-  let mut cache = FifoCache::new(2, Duration::from_secs(60));
+  let mut cache = FifoCache::new(
+    2,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert("a", 1);
   cache.insert("b", 2);
@@ -33,7 +43,11 @@ fn test_fifo_eviction() {
 
 #[test]
 fn test_reduce_max_size_and_prune() {
-  let mut cache = FifoCache::new(3, Duration::from_secs(60));
+  let mut cache = FifoCache::new(
+    3,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert("a", 1);
   cache.insert("b", 2);
@@ -52,7 +66,11 @@ fn test_reduce_max_size_and_prune() {
 
 #[test]
 fn test_reduce_max_size_no_prune() {
-  let mut cache = FifoCache::new(3, Duration::from_secs(60));
+  let mut cache = FifoCache::new(
+    3,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert("a", 1);
   cache.insert("b", 2);
@@ -79,6 +97,7 @@ fn test_reduce_max_size_no_prune() {
   assert_eq!(cache.len(), 2);
 }
 
+#[cfg(feature = "ttl")]
 #[test]
 fn test_ttl_expiration() {
   let mut cache = FifoCache::new(10, Duration::from_millis(100));
@@ -92,7 +111,11 @@ fn test_ttl_expiration() {
 
 #[test]
 fn test_update_existing() {
-  let mut cache = FifoCache::new(10, Duration::from_secs(60));
+  let mut cache = FifoCache::new(
+    10,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert("key", "value1");
   cache.insert("key", "value2");
@@ -103,7 +126,11 @@ fn test_update_existing() {
 
 #[test]
 fn test_remove() {
-  let mut cache = FifoCache::new(10, Duration::from_secs(60));
+  let mut cache = FifoCache::new(
+    10,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert("key", "value");
   assert_eq!(cache.remove(&"key"), Some("value"));
@@ -111,6 +138,7 @@ fn test_remove() {
   assert_eq!(cache.len(), 0);
 }
 
+#[cfg(feature = "ttl")]
 #[test]
 fn test_cleanup_expired() {
   let mut cache = FifoCache::new(10, Duration::from_millis(100));
@@ -126,7 +154,11 @@ fn test_cleanup_expired() {
 
 #[test]
 fn test_lazy() {
-  let mut cache: FifoCache<String, String> = FifoCache::new(100, Duration::from_secs(60));
+  let mut cache: FifoCache<String, String> = FifoCache::new(
+    10,
+    #[cfg(feature = "ttl")]
+    Duration::from_secs(60)
+  );
   
   cache.insert_lazy("key1", "value1");
   cache.insert_lazy("key2", "value2");

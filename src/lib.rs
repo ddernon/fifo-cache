@@ -3,6 +3,7 @@
 //! # Example
 //!
 //! ```
+//! # #[cfg(feature = "ttl")] {
 //! use fifo_cache::FifoCache;
 //! use std::time::Duration;
 //!
@@ -12,16 +13,19 @@
 //! if let Some(value) = cache.get(&"key1") {
 //!   println!("Found: {}", value);
 //! }
+//! # }
 //! ```
 
 use std::borrow::Borrow;
 use std::collections::{hash_map, HashMap, VecDeque};
+#[cfg(feature = "ttl")]
 use std::time::{Duration, Instant};
 
 /// A cache entry that stores a value along with its expiration time.
 #[derive(Debug, Clone)]
 struct CacheEntry<V> {
   value: V,
+  #[cfg(feature = "ttl")]
   expires_at: Instant,
 }
 
@@ -38,6 +42,7 @@ pub struct FifoCache<K, V> {
   map: HashMap<K, CacheEntry<V>>,
   order: VecDeque<K>,
   max_size: usize,
+  #[cfg(feature = "ttl")]
   default_ttl: Duration,
 }
 
@@ -52,11 +57,16 @@ where
   ///
   /// * `max_size` - Maximum number of entries the cache can hold
   /// * `default_ttl` - Default time-to-live for cache entries
-  pub fn new(max_size: usize, default_ttl: Duration) -> Self {
+  pub fn new(
+    max_size: usize,
+    #[cfg(feature = "ttl")]
+    default_ttl: Duration
+  ) -> Self {
     Self {
       map: HashMap::with_capacity(max_size + 1),
       order: VecDeque::with_capacity(max_size + 1),
       max_size,
+      #[cfg(feature = "ttl")]
       default_ttl,
     }
   }
@@ -73,7 +83,9 @@ where
   ///
   /// # Example
   ///
+  /// With TTL enabled:
   /// ```
+  /// # #[cfg(feature = "ttl")] {
   /// use fifo_cache::FifoCache;
   /// use std::time::Duration;
   ///
@@ -81,16 +93,35 @@ where
   /// cache.insert("my_key", "my_value");
   /// let value = cache.get(&"my_key");
   /// assert_eq!(value, Some(&"my_value"));
+  /// # }
+  /// ```
+  /// 
+  /// Without TTL:
+  /// ```
+  /// # #[cfg(not(feature = "ttl"))] {
+  /// use fifo_cache::FifoCache;
+  ///
+  /// let mut cache = FifoCache::new(100);
+  /// cache.insert("my_key", "my_value");
+  /// assert_eq!(cache.get(&"my_key"), Some(&"my_value"));
+  /// # }
   /// ```
   pub fn get<Q>(&self, key: &Q) -> Option<&V> 
   where 
     K: Borrow<Q>,
     Q: ?Sized + std::hash::Hash + Eq,
   {
-    let now = Instant::now();
-    self.map.get(key)
-      .filter(|entry| entry.expires_at > now)
-      .map(|entry| &entry.value)
+    #[cfg(feature = "ttl")] {
+      let now = Instant::now();
+      self.map
+        .get(key)
+        .filter(|entry| entry.expires_at > now)
+        .map(|entry| &entry.value)
+    }
+
+    #[cfg(not(feature = "ttl"))] {
+      self.map.get(key).map(|entry| &entry.value)
+    }
   }
 
   /// Inserts a key-value pair into the cache.
@@ -103,18 +134,33 @@ where
   /// * `key` - The key to insert
   /// * `value` - The value to associate with the key
   pub fn insert(&mut self, key: K, value: V) {
-    let expires_at = Instant::now() + self.default_ttl;
-    
-    match self.map.entry(key.clone()) {
-      hash_map::Entry::Occupied(mut entry) => {
-        // Entry exists, just update it
-        entry.insert(CacheEntry { value, expires_at });
+    #[cfg(feature = "ttl")] {
+      let expires_at = Instant::now() + self.default_ttl;
+      
+      match self.map.entry(key.clone()) {
+        hash_map::Entry::Occupied(mut entry) => {
+          // Entry exists, just update it
+          entry.insert(CacheEntry { value, expires_at });
+        }
+        hash_map::Entry::Vacant(entry) => {
+          // Entry doesn't exist, insert it then prune
+          entry.insert(CacheEntry { value, expires_at });
+          self.order.push_back(key);
+          self.prune();
+        }
       }
-      hash_map::Entry::Vacant(entry) => {
-        // Entry doesn't exist, insert it then prune
-        entry.insert(CacheEntry { value, expires_at });
-        self.order.push_back(key);
-        self.prune();
+    }
+
+    #[cfg(not(feature = "ttl"))] {
+      match self.map.entry(key.clone()) {
+        hash_map::Entry::Occupied(mut entry) => {
+          entry.insert(CacheEntry { value });
+        }
+        hash_map::Entry::Vacant(entry) => {
+          entry.insert(CacheEntry { value });
+          self.order.push_back(key);
+          self.prune();
+        }
       }
     }
   }
@@ -126,6 +172,7 @@ where
   /// need to explicitly specify the cache types:
   ///
   /// ```
+  /// # #[cfg(feature = "ttl")] {
   /// use fifo_cache::FifoCache;
   /// use std::time::Duration;
   /// 
@@ -136,6 +183,7 @@ where
   /// // With insert_lazy - types must be specified  
   /// let mut cache: FifoCache<String, String> = FifoCache::new(100, Duration::from_secs(60));
   /// cache.insert_lazy("key", "value");  // &str -> String conversion
+  /// # }
   /// ```
   pub fn insert_lazy<Kinto: Into<K>, Vinto: Into<V>>(&mut self, key: Kinto, value: Vinto) {
     self.insert(key.into(), value.into())
@@ -173,6 +221,7 @@ where
     self.map.is_empty()
   }
 
+  #[cfg(feature = "ttl")]
   /// Removes all expired entries from the cache.
   pub fn cleanup_expired(&mut self) {
     let now = Instant::now();
@@ -215,11 +264,13 @@ where
     }
   }
 
+  #[cfg(feature = "ttl")]
   /// Returns the default TTL for cache entries.
   pub fn default_ttl(&self) -> Duration {
     self.default_ttl
   }
 
+  #[cfg(feature = "ttl")]
   /// Sets the default TTL for cache entries.
   /// Note that this will only affect entries that get inserted or updated after the change.
   /// Existing entries will keep their TTL until they expire.
@@ -249,6 +300,10 @@ where
   /// Creates a cache with capacity 1000 and TTL of 5 minutes.
   /// This is *extremely* arbitrary and you most likely want to use your own, use-case-adjusted settings rather than this default.
   fn default() -> Self {
-    Self::new(1000, Duration::from_secs(300))
+    Self::new(
+      1000,
+      #[cfg(feature = "ttl")]
+      Duration::from_secs(300)
+    )
   }
 }

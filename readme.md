@@ -22,10 +22,17 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-fifo-cache = "0.1"
+fifo-cache = "0.2"
 ```
 
-## Example
+Or, for no TTL:
+
+```toml
+[dependencies]
+fifo-cache = { version = "0.2", default-features = false }
+```
+
+### Example
 
 ```rust
 use fifo_cache::FifoCache;
